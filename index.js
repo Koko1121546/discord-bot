@@ -9,11 +9,16 @@ const {
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages
   ]
 });
+
+// ======================
+// Slash Commands
+// ======================
 
 const commands = [
 
@@ -22,22 +27,25 @@ const commands = [
     .setName('announcement')
     .setDescription('ประกาศ @everyone')
     .addStringOption(option =>
-      option.setName('message')
-        .setDescription('ข้อความ')
+      option
+        .setName('message')
+        .setDescription('ข้อความประกาศ')
         .setRequired(true)
     ),
 
   // /raid
   new SlashCommandBuilder()
     .setName('raid')
-    .setDescription('Raid Alert')
+    .setDescription('Raid Alert + DM')
     .addRoleOption(option =>
-      option.setName('role')
+      option
+        .setName('role')
         .setDescription('เลือกยศ')
         .setRequired(true)
     )
     .addStringOption(option =>
-      option.setName('message')
+      option
+        .setName('message')
         .setDescription('ข้อความ')
         .setRequired(true)
     ),
@@ -45,9 +53,10 @@ const commands = [
   // /activecheck
   new SlashCommandBuilder()
     .setName('activecheck')
-    .setDescription('เช็คคน Active')
+    .setDescription('Active Check')
     .addStringOption(option =>
-      option.setName('message')
+      option
+        .setName('message')
         .setDescription('ข้อความ')
         .setRequired(true)
     )
@@ -55,6 +64,10 @@ const commands = [
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
+// ======================
+// Bot Ready
+// ======================
 
 client.once('ready', async () => {
 
@@ -75,61 +88,79 @@ client.once('ready', async () => {
 
 });
 
+// ======================
+// Commands
+// ======================
+
 client.on('interactionCreate', async interaction => {
 
   if (!interaction.isChatInputCommand()) return;
 
-  // =========================
+  // ======================
   // /announcement
-  // =========================
+  // ======================
+
   if (interaction.commandName === 'announcement') {
 
     const msg = interaction.options.getString('message');
 
     await interaction.reply({
-      content: `@everyone\n📢 ${msg}`
+      content: `@everyone\n📢 Announcement\n\n${msg}`,
+      allowedMentions: {
+        parse: ['everyone']
+      }
     });
+
   }
 
-  // =========================
+  // ======================
   // /raid
-  // =========================
+  // ======================
+
   if (interaction.commandName === 'raid') {
 
     const role = interaction.options.getRole('role');
     const msg = interaction.options.getString('message');
 
+    // ส่งในห้อง
     await interaction.reply({
-      content: `${role}\n🚨 RAID ALERT 🚨\n${msg}`
+      content: `${role}\n🚨 RAID ALERT 🚨\n\n${msg}`,
+      allowedMentions: {
+        roles: [role.id]
+      }
     });
 
-    // DM ทุกคน
-    interaction.guild.members.fetch().then(members => {
+    // DM ทุกคนในเซิร์ฟ
+    const members = await interaction.guild.members.fetch();
 
-      members.forEach(member => {
+    members.forEach(member => {
 
-        if (!member.user.bot) {
+      if (!member.user.bot) {
 
-          member.send(`🚨 RAID ALERT 🚨\n${msg}`)
-          .catch(() => {});
-        }
+        member.send(`🚨 RAID ALERT 🚨\n\n${msg}`)
+        .catch(() => {});
 
-      });
+      }
 
     });
 
   }
 
-  // =========================
+  // ======================
   // /activecheck
-  // =========================
+  // ======================
+
   if (interaction.commandName === 'activecheck') {
 
     const msg = interaction.options.getString('message');
 
     await interaction.reply({
-      content: `@everyone\n✅ ACTIVE CHECK\n${msg}`
+      content: `@everyone\n✅ ACTIVE CHECK\n\n${msg}`,
+      allowedMentions: {
+        parse: ['everyone']
+      }
     });
+
   }
 
 });
